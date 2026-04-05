@@ -1,0 +1,9 @@
+spec_version: "1.0"
+environment:
+  name: "SecurityAuditor-MultiStep"
+  description: "Advanced Multi-Step PR Security Audit simulator."
+api:
+  base_url: "http://localhost:7860"
+  endpoints:
+    step: "/step"
+    reset: "/reset"
