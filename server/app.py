@@ -1,7 +1,6 @@
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
-from env import SecurityEnv
-from models import Action, StepResponse
+from server.env import SecurityEnv
+from server.models import Action, StepResponse
 
 app = FastAPI()
 env = SecurityEnv()

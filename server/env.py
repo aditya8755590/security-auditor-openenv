@@ -1,6 +1,5 @@
 import numpy as np
-from models import Observation, Action
-
+from server.models import Observation, Action
 class SecurityEnv:
     def __init__(self):
         # Simulated File System (The GitHub Pull Request)
