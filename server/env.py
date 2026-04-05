@@ -1,4 +1,3 @@
-import numpy as np
 from server.models import Observation, Action
 class SecurityEnv:
     def __init__(self):
