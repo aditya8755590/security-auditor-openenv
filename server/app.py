@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 from server.env import SecurityEnv
 from server.models import Action, StepResponse
 
