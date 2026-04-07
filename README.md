@@ -1,3 +1,13 @@
+---
+title: Security Auditor Openenv
+emoji: 🛡️
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+short_description: Multi-Step PR Security Audit simulator
+---
+
 # 🛡️ Security Auditor OpenEnv
 
 An advanced, multi-step Reinforcement Learning (RL) environment built on the OpenEnv spec. This system simulates a stateful backend file system, allowing LLM agents to act as Security Engineers and autonomously audit code for vulnerabilities.
