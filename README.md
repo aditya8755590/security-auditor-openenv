@@ -1,42 +1,48 @@
----
-title: Security Auditor OpenEnv
-emoji: 🛡️
-colorFrom: blue
-colorTo: indigo
-sdk: docker
-app_port: 7860
----
+# 🛡️ Security Auditor OpenEnv
 
-# 🛡️ Security Code Auditor (Multi-Step RL Environment)
+An advanced, multi-step Reinforcement Learning (RL) environment built on the OpenEnv spec. This system simulates a stateful backend file system, allowing LLM agents to act as Security Engineers and autonomously audit code for vulnerabilities.
 
-## 📖 Overview
-This environment simulates a real-world **Senior Security Engineer's workflow**. Instead of basic line-by-line classification, this environment requires an AI agent to navigate a simulated file system (like a GitHub Pull Request), open specific files, identify vulnerabilities, and submit a final review. 
+## 🚀 Overview
 
-## 🧠 Multi-Step Decision Making
-This environment tests an LLM's ability to plan, explore, and retain context over multiple steps, acting as a state machine.
+The **Security Auditor** environment forces AI agents to move beyond simple Q&A and execute a "Real-World Task Simulation." The agent must navigate a simulated file system, read application code, identify specific security vulnerabilities, and submit a final audit report. 
 
-### 🔍 Observation Space (What the Agent Sees)
-*   `current_directory`: The agent's current location in the repository.
-*   `available_files`: List of files in the current PR.
-*   `file_content_view`: The code inside the currently opened file.
-*   `bugs_flagged_count`: Track progress of identified vulnerabilities.
-*   `system_message`: Feedback from the environment (e.g., "Opened db.py", "Error: File not found").
+This environment is fully compliant with the Meta OpenEnv specification, featuring strict Pydantic typing, multi-mode deployment capabilities (Local, Docker, Hugging Face), and deterministic programmatic graders.
 
-### 🕹️ Action Space (What the Agent Can Do)
-The agent must issue specific commands to explore the environment:
-1.  `LIST_FILES` - View the directory contents.
-2.  `READ_FILE` (target = filename) - Open and read a file's code.
-3.  `FLAG_BUG` (target = filename:bug_type) - Report a vulnerability (e.g., `db.py:SQL_INJECTION`).
-4.  `SUBMIT_REVIEW` - Complete the audit and calculate the final score.
+## 🎯 The Three Tasks
 
-## 🏆 Reward Logic
-*   **+0.1**: Exploring the codebase (opening real files).
-*   **-0.5**: Hallucinating files or using invalid commands.
-*   **+5.0**: Correctly identifying a real vulnerability.
-*   **-2.0**: False positive penalty (flagging safe code).
-*   **+10.0**: Perfect Run Bonus (Finding all bugs with zero false positives).
+The environment evaluates agents across an escalating difficulty curve. Each task has a deterministic grader that scores performance strictly between `0.0` and `1.0`.
 
-## 🚀 API Endpoints
-*   `POST /reset`: Initializes the PR environment.
-*   `POST /step`: Takes an action and returns the new state and reward.
-*   `GET /state`: Health check endpoint.
+1. **Task 1: Dependency Audit (Easy)**
+   - **Objective:** The agent must locate package configuration files (`requirements.txt`, `package.json`) and flag known vulnerable or outdated dependencies.
+2. **Task 2: Authentication Audit (Medium)**
+   - **Objective:** The agent must navigate to middleware/authentication files, read the implementation, and flag insecure token handling or missing authorization scopes.
+3. **Task 3: Data Leak / Deserialization (Hard)**
+   - **Objective:** The agent must trace data flow across multiple files (e.g., from an API route to a utility function) to identify an unsafe deserialization or SQL injection vulnerability.
+
+## 🛠️ System Architecture & Mechanics
+
+- **Stateful Virtual File System:** The environment maintains a persistent state across steps. Actions like `READ_FILE` dynamically update the agent's observation space with realistic console outputs and file contents.
+- **Action Space:** Agents interact using structured commands: `LIST_FILES`, `READ_FILE`, `FLAG_VULNERABILITY`, and `SUBMIT_REPORT`.
+- **Meaningful Reward Shaping:** - `+0.1` for exploratory progress (reading relevant files).
+  - `+0.5` for correctly identifying a bug location.
+  - `-0.1` for invalid commands or hallucinated file paths.
+  - `-1.0` (Terminal) for submitting a report with false positives.
+- **Sandboxed Execution:** Vulnerabilities are simulated via text strings and mock states, ensuring the host server is never exposed to actual malicious code execution.
+
+## 💻 Tech Stack
+
+- **Backend:** FastAPI, Python 3.10+
+- **RL Framework:** OpenEnv Core
+- **Validation:** Pydantic
+- **Packaging:** `uv`, `pyproject.toml`
+- **Deployment:** Docker, Hugging Face Spaces
+
+## 🏁 Getting Started
+
+### Multi-Mode Deployment
+
+**1. Run Locally (Standard)**
+```bash
+pip install uv
+uv sync
+uv run uvicorn server.app:app --host 0.0.0.0 --port 7860
