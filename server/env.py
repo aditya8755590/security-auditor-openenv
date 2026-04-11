@@ -24,43 +24,40 @@ class AlgorithmicDebuggerEnv:
             "terminal": "System initialized. Waiting for action."
         }
 
-    def step(self, action: dict):
+   def step(self, action: dict):
         self.step_count += 1
         command = action.get("command")
         target = action.get("target", "")
         
         obs = ""
-        reward = 0.01 # STRICT BOUNDARY: Greater than 0
+        reward = 0.001 # Microscopic default
         done = False
 
         if command == "READ_CODE":
             obs = self.agent_code
-            reward = 0.01
+            reward = 0.001
             
         elif command == "APPLY_PATCH":
-            # The agent sends the entirely rewritten code
             self.agent_code = target
-            obs = "Patch applied to memory. Run tests to verify."
-            reward = 0.1 # Safe boundary
+            obs = "Patch applied. Run tests to verify."
+            reward = 0.001
             
         elif command == "RUN_TESTS":
-            # REAL EXECUTION happens here
             result = CodeExecutor.run_tests(self.agent_code, self.current_task["test_code"])
             obs = result["output"]
             
             if result["success"]:
-                reward = 0.99 # STRICT BOUNDARY: Less than 1
+                reward = 0.95 # Safe winning score
                 done = True
                 obs += "\n\nSUCCESS! All tests passed."
             else:
-                reward = 0.01 
+                reward = 0.001
                 obs += "\n\nFAILED. Check the stack trace."
                 
         else:
-            obs = "Invalid command. Use READ_CODE, APPLY_PATCH, or RUN_TESTS."
-            reward = 0.01
+            obs = "Invalid command."
+            reward = 0.001
 
-        # Force stop if agent takes too long
         if self.step_count >= self.max_steps:
             done = True
             

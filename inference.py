@@ -70,9 +70,9 @@ def run_agent():
                 done = True
 
             rewards_history.append(str(float(step_reward)))
-            
-            # STRICT BOUNDARY: Check for 0.99 instead of 1.0
-            if step_reward >= 0.99:
+
+            # STRICT BOUNDARY: Check for 0.90 instead of 1.0
+            if step_reward >= 0.90:
                 is_success = True
 
             # 🚨 STRICT LOG 2: [STEP]
