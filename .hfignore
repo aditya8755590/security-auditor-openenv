@@ -1,0 +1,14 @@
+# Byte-compiled / optimized Python files
+__pycache__/
+*.py[cod]
+
+# Distribution / packaging metadata
+*.egg-info/
+.eggs/
+
+# Virtual Environments
+venv/
+.venv/
+
+# Secrets
+.env

@@ -1,0 +1,23 @@
+# Byte-compiled / optimized Python files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging metadata (What you see in the screenshot)
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+
+# Secrets (CRITICAL: Never commit API keys)
+.env
+
+# IDE / Editor folders
+.vscode/
+.idea/
+.DS_Store
