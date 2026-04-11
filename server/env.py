@@ -30,18 +30,18 @@ class AlgorithmicDebuggerEnv:
         target = action.get("target", "")
         
         obs = ""
-        reward = 0.0
+        reward = 0.01 # STRICT BOUNDARY: Greater than 0
         done = False
 
         if command == "READ_CODE":
             obs = self.agent_code
-            reward = 0.0
+            reward = 0.01
             
         elif command == "APPLY_PATCH":
             # The agent sends the entirely rewritten code
             self.agent_code = target
             obs = "Patch applied to memory. Run tests to verify."
-            reward = 0.1 # Small reward for making an edit
+            reward = 0.1 # Safe boundary
             
         elif command == "RUN_TESTS":
             # REAL EXECUTION happens here
@@ -49,16 +49,16 @@ class AlgorithmicDebuggerEnv:
             obs = result["output"]
             
             if result["success"]:
-                reward = 1.0
+                reward = 0.99 # STRICT BOUNDARY: Less than 1
                 done = True
                 obs += "\n\nSUCCESS! All tests passed."
             else:
-                reward = -0.1 # Penalty for failing tests
+                reward = 0.01 
                 obs += "\n\nFAILED. Check the stack trace."
                 
         else:
             obs = "Invalid command. Use READ_CODE, APPLY_PATCH, or RUN_TESTS."
-            reward = -0.1
+            reward = 0.01
 
         # Force stop if agent takes too long
         if self.step_count >= self.max_steps:

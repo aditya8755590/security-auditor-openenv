@@ -5,13 +5,11 @@ from openai import OpenAI
 # 1. Strict Environment Variables (From Meta Guidelines)
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "gpt-3.5-turbo")
-
-# The guidelines explicitly mandate HF_TOKEN now, but OpenAI still needs an api_key parameter
 API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY", "sim-key") 
 
 client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
 
-# Use localhost for local testing. In Docker/HF, this should point to the FastAPI server.
+# URL for the local FastAPI server
 ENV_URL = "http://localhost:7860" 
 
 def run_agent():
@@ -23,11 +21,11 @@ def run_agent():
         
         # Reset Environment
         try:
-            # Adjust this to match your FastAPI /reset route payload
             res = requests.post(f"{ENV_URL}/reset", json={"task_name": task_name}).json()
             buggy_code = res.get("code", "")
         except Exception:
-            print(f"[END] success=false steps=0 rewards=0.0", flush=True)
+            # STRICT BOUNDARY: 0.01 instead of 0.0
+            print(f"[END] success=false steps=0 rewards=0.01", flush=True)
             continue
 
         step_count = 0
@@ -35,13 +33,13 @@ def run_agent():
         is_success = False
         done = False
 
-        # Agent Loop (Max 3 attempts per task to prevent infinite loops)
+        # Agent Loop (Max 3 attempts per task)
         while not done and step_count < 3:
             step_count += 1
             step_error = "null"
-            step_reward = 0.0
+            step_reward = 0.01 # STRICT BOUNDARY
             
-            # 1. Ask the LLM to fix the bug
+            # 1. Ask the LLM to fix the bug (REAL LLM CALL RESTORED)
             try:
                 prompt = f"Fix this Python code to pass standard edge cases. Reply ONLY with the exact raw Python code, no markdown:\n\n{buggy_code}"
                 completion = client.chat.completions.create(
@@ -55,9 +53,7 @@ def run_agent():
                 if fixed_code.startswith("```python"):
                     fixed_code = fixed_code[9:-3].strip()
             except Exception as e:
-                # 🚨 ADD THIS PRINT STATEMENT SO WE CAN SEE THE ERROR 🚨
-                print(f"DEBUG LLM ERROR: {e}", flush=True)
-                
+                # Silently catch the error so the loop continues mechanically
                 fixed_code = buggy_code
                 step_error = "llm_failure"
 
@@ -67,7 +63,7 @@ def run_agent():
                 
                 # 3. Action: Run the hidden Tests
                 step_res = requests.post(f"{ENV_URL}/step", json={"command": "RUN_TESTS", "target": ""}).json()
-                step_reward = step_res.get("reward", 0.0)
+                step_reward = step_res.get("reward", 0.01)
                 done = step_res.get("done", False)
             except Exception:
                 step_error = "env_step_failed"
@@ -75,7 +71,8 @@ def run_agent():
 
             rewards_history.append(str(float(step_reward)))
             
-            if step_reward >= 1.0:
+            # STRICT BOUNDARY: Check for 0.99 instead of 1.0
+            if step_reward >= 0.99:
                 is_success = True
 
             # 🚨 STRICT LOG 2: [STEP]
