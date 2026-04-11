@@ -24,13 +24,13 @@ class AlgorithmicDebuggerEnv:
             "terminal": "System initialized. Waiting for action."
         }
 
-   def step(self, action: dict):
+    def step(self, action: dict):
         self.step_count += 1
         command = action.get("command")
         target = action.get("target", "")
         
         obs = ""
-        reward = 0.001 # Microscopic default
+        reward = 0.001
         done = False
 
         if command == "READ_CODE":
@@ -47,7 +47,7 @@ class AlgorithmicDebuggerEnv:
             obs = result["output"]
             
             if result["success"]:
-                reward = 0.95 # Safe winning score
+                reward = 0.95
                 done = True
                 obs += "\n\nSUCCESS! All tests passed."
             else:
