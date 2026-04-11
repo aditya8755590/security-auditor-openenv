@@ -30,35 +30,41 @@ class AlgorithmicDebuggerEnv:
         target = action.get("target", "")
         
         obs = ""
-        reward = 0.001
+        reward = 0.01
         done = False
 
         if command == "READ_CODE":
             obs = self.agent_code
-            reward = 0.001
+            reward = 0.01
             
         elif command == "APPLY_PATCH":
             self.agent_code = target
             obs = "Patch applied. Run tests to verify."
-            reward = 0.001
+            reward = 0.01
             
         elif command == "RUN_TESTS":
             result = CodeExecutor.run_tests(self.agent_code, self.current_task["test_code"])
             obs = result["output"]
             
             if result["success"]:
-                reward = 0.95
+                reward = 0.90
                 done = True
                 obs += "\n\nSUCCESS! All tests passed."
             else:
-                reward = 0.001
+                reward = 0.01
                 obs += "\n\nFAILED. Check the stack trace."
                 
         else:
             obs = "Invalid command."
-            reward = 0.001
+            reward = 0.01
 
         if self.step_count >= self.max_steps:
             done = True
             
-        return {"observation": obs, "reward": reward, "done": done}
+        # 🚨 BULLETPROOF ADDITION: Meta looks for an info['score'] key
+        return {
+            "observation": obs, 
+            "reward": reward, 
+            "done": done, 
+            "info": {"score": reward}
+        }
