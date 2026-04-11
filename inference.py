@@ -2,54 +2,88 @@ import os
 import requests
 from openai import OpenAI
 
-# 1. Grader Variables
+# 1. Strict Environment Variables (From Meta Guidelines)
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
-API_KEY = os.getenv("API_KEY", "sim-key") 
 MODEL_NAME = os.getenv("MODEL_NAME", "gpt-3.5-turbo")
 
-# 2. Initialize the OpenAI client
-client = OpenAI(
-    base_url=API_BASE_URL,
-    api_key=API_KEY
-)
+# The guidelines explicitly mandate HF_TOKEN now, but OpenAI still needs an api_key parameter
+API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY", "sim-key") 
 
-ENV_URL = "https://aditya875590-security-auditor-openenv.hf.space"
+client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
+
+# Use localhost for local testing. In Docker/HF, this should point to the FastAPI server.
+ENV_URL = "http://localhost:7860" 
 
 def run_agent():
-    # RULE 1 FIX: Define exactly 3 distinct tasks
-    tasks = ["Audit_Dependencies", "Audit_Auth", "Audit_Data_Leaks"]
+    tasks = ["Task_1_Easy", "Task_2_Medium", "Task_3_Hard"]
     
     for task_name in tasks:
-        # Start Log
-        print(f"[START] task={task_name}", flush=True)
+        # 🚨 STRICT LOG 1: [START]
+        print(f"[START] task={task_name} env=AlgorithmicDebugger model={MODEL_NAME}", flush=True)
         
-        # Reset the environment
+        # Reset Environment
         try:
-            requests.post(f"{ENV_URL}/reset")
-        except:
-            pass
-        
-        # Keep the proxy happy with an LLM call
-        try:
-            client.chat.completions.create(
-                model=MODEL_NAME,
-                messages=[{"role": "user", "content": f"Begin {task_name}"}],
-                max_tokens=5
-            )
+            # Adjust this to match your FastAPI /reset route payload
+            res = requests.post(f"{ENV_URL}/reset", json={"task_name": task_name}).json()
+            buggy_code = res.get("code", "")
         except Exception:
-            pass 
-        
-        # Step Log
-        print("[STEP] step=1 reward=0.5", flush=True)
-        
-        # Action against your server
-        try:
-            requests.post(f"{ENV_URL}/step", json={"command": "LIST_FILES", "target": ""})
-        except:
-            pass
-        
-        # RULE 2 FIX: Score must be strictly between 0 and 1 (using 0.95)
-        print(f"[END] task={task_name} score=0.95 steps=1", flush=True)
+            print(f"[END] success=false steps=0 rewards=0.0", flush=True)
+            continue
+
+        step_count = 0
+        rewards_history = []
+        is_success = False
+        done = False
+
+        # Agent Loop (Max 3 attempts per task to prevent infinite loops)
+        while not done and step_count < 3:
+            step_count += 1
+            step_error = "null"
+            step_reward = 0.0
+            
+            # 1. Ask the LLM to fix the bug
+            try:
+                prompt = f"Fix this Python code to pass standard edge cases. Reply ONLY with the exact raw Python code, no markdown:\n\n{buggy_code}"
+                completion = client.chat.completions.create(
+                    model=MODEL_NAME,
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=300
+                )
+                fixed_code = completion.choices[0].message.content.strip()
+                
+                # Strip markdown just in case the LLM disobeys
+                if fixed_code.startswith("```python"):
+                    fixed_code = fixed_code[9:-3].strip()
+            except Exception as e:
+                # 🚨 ADD THIS PRINT STATEMENT SO WE CAN SEE THE ERROR 🚨
+                print(f"DEBUG LLM ERROR: {e}", flush=True)
+                
+                fixed_code = buggy_code
+                step_error = "llm_failure"
+
+            # 2. Action: Apply the Patch
+            try:
+                requests.post(f"{ENV_URL}/step", json={"command": "APPLY_PATCH", "target": fixed_code})
+                
+                # 3. Action: Run the hidden Tests
+                step_res = requests.post(f"{ENV_URL}/step", json={"command": "RUN_TESTS", "target": ""}).json()
+                step_reward = step_res.get("reward", 0.0)
+                done = step_res.get("done", False)
+            except Exception:
+                step_error = "env_step_failed"
+                done = True
+
+            rewards_history.append(str(float(step_reward)))
+            
+            if step_reward >= 1.0:
+                is_success = True
+
+            # 🚨 STRICT LOG 2: [STEP]
+            print(f"[STEP] step={step_count} action=RUN_TESTS reward={step_reward:.2f} done={str(done).lower()} error={step_error}", flush=True)
+
+        # 🚨 STRICT LOG 3: [END]
+        rewards_str = ",".join(rewards_history)
+        print(f"[END] success={str(is_success).lower()} steps={step_count} rewards={rewards_str}", flush=True)
 
 if __name__ == "__main__":
     run_agent()

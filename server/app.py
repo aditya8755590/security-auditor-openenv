@@ -1,50 +1,46 @@
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
-from server.env import SecurityEnv
-from server.models import Action, StepResponse
+from pydantic import BaseModel
+from typing import Optional
+from server.env import AlgorithmicDebuggerEnv
 
-app = FastAPI()
-env = SecurityEnv()
+app = FastAPI(title="Algorithmic Debugger OpenEnv")
+
+# Initialize our new real-execution environment
+env = AlgorithmicDebuggerEnv()
+
+# 🛡️ Pydantic Models for Strict Spec Compliance
+class Action(BaseModel):
+    command: str
+    target: Optional[str] = ""
+
+class ResetRequest(BaseModel):
+    task_name: Optional[str] = "Task_1_Easy"
+
+@app.get("/")
+def read_root():
+    return {"status": "Algorithmic Debugger is Running"}
 
 @app.post("/reset")
-async def reset():
-    return env.reset()
+def reset_env(req: ResetRequest = None):
+    # Route the specific Easy/Medium/Hard task to the engine
+    task = req.task_name if req else "Task_1_Easy"
+    obs = env.reset(task)
+    return {
+        "observation": obs["terminal"], 
+        "code": obs["code"], 
+        "task": obs["task"]
+    }
 
-@app.post("/step", response_model=StepResponse)
-async def step(action: Action):
-    obs, reward, done = env.step(action)
-    return {"observation": obs, "reward": reward, "done": done}
+@app.post("/step")
+def step_env(action: Action):
+    # Pass the strict Pydantic action to the engine
+    result = env.step(action.model_dump())
+    return result
 
 @app.get("/state")
-async def state():
-    # Meta requires a way to check if the env is healthy
-    return {"status": "active", "current_view": env.current_view}
-
-@app.get("/", response_class=HTMLResponse)
-async def root():
-    return """
-    <html>
-        <head>
-            <title>Security Auditor Environment</title>
-            <style>
-                body { background-color: #0d1117; color: #c9d1d9; font-family: -apple-system, sans-serif; text-align: center; padding-top: 100px; }
-                h1 { color: #58a6ff; }
-                .btn { background-color: #238636; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-size: 18px; display: inline-block; margin-top: 20px; transition: 0.2s; }
-                .btn:hover { background-color: #2ea043; }
-            </style>
-        </head>
-        <body>
-            <h1>🛡️ Security Auditor OpenEnv</h1>
-            <p>Advanced Multi-Step RL Environment for AI Agents.</p>
-            <p>System Status: <strong>ONLINE</strong></p>
-            <a href="/docs" class="btn">🚀 Enter Interactive API Dashboard</a>
-        </body>
-    </html>
-    """
-
-def main():
-    import uvicorn
-    uvicorn.run("server.app:app", host="0.0.0.0", port=7860)
-
-if __name__ == "__main__":
-    main()
+def get_state():
+    return {
+        "task": env.current_task_name,
+        "step_count": env.step_count,
+        "code_state": env.agent_code
+    }
