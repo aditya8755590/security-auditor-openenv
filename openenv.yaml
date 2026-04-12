@@ -1,12 +1,12 @@
 spec_version: 1
 app: server.app:app
 tasks:
-  - id: easy_task
+  - id: Task_1_Easy
     difficulty: easy
-    grader: graders:EasyGrader
-  - id: medium_task
+    grader: server.graders:EasyGrader
+  - id: Task_2_Medium
     difficulty: medium  
-    grader: graders:MediumGrader
-  - id: hard_task
+    grader: server.graders:MediumGrader
+  - id: Task_3_Hard
     difficulty: hard
-    grader: graders:HardGrader
+    grader: server.graders:HardGrader
