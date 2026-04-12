@@ -3,10 +3,10 @@ app: server.app:app
 tasks:
   - id: Task_1_Easy
     difficulty: easy
-    grader: graders:EasyGrader
+    grader: server.graders:EasyGrader
   - id: Task_2_Medium
     difficulty: medium  
-    grader: graders:MediumGrader
+    grader: server.graders:MediumGrader
   - id: Task_3_Hard
     difficulty: hard
-    grader: graders:HardGrader
+    grader: server.graders:HardGrader
