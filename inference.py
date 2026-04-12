@@ -2,15 +2,15 @@ import os
 import requests
 from openai import OpenAI
 
-API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
-MODEL_NAME = os.getenv("MODEL_NAME", "gpt-3.5-turbo")
-API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY", "sim-key") 
+# 🚨 HARDCODED FOR HUGGING FACE SERVERLESS INFERENCE
+API_BASE_URL = "https://api-inference.huggingface.co/v1/"
+MODEL_NAME = "meta-llama/Meta-Llama-3-8B-Instruct"
+API_KEY = os.getenv("HF_TOKEN") 
 
 client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
 ENV_URL = "http://localhost:7860" 
 
 def run_agent():
-    # Meta Grader Requires Exactly 3 or more tasks
     tasks = ["Task_1_Easy", "Task_2_Medium", "Task_3_Hard"]
     
     for task_name in tasks:
@@ -19,7 +19,8 @@ def run_agent():
         try:
             res = requests.post(f"{ENV_URL}/reset", json={"task_name": task_name}).json()
             buggy_code = res.get("code", "")
-        except Exception:
+        except Exception as e:
+            print(f"Env Reset Error: {e}")
             print(f"[END] success=false steps=1 rewards=0.15", flush=True)
             continue
 
@@ -32,9 +33,15 @@ def run_agent():
             
             try:
                 prompt = f"Fix this code:\n{buggy_code}"
-                completion = client.chat.completions.create(model=MODEL_NAME, messages=[{"role":"user","content":prompt}])
+                # Using the HF OpenAI-compatible endpoint
+                completion = client.chat.completions.create(
+                    model=MODEL_NAME, 
+                    messages=[{"role":"user","content":prompt}],
+                    max_tokens=500
+                )
                 fixed_code = completion.choices[0].message.content.strip()
-            except Exception:
+            except Exception as e:
+                print(f"LLM API Error: {e}") # 🚨 Will print in HF logs if token is missing
                 fixed_code = buggy_code
 
             try:
@@ -42,7 +49,8 @@ def run_agent():
                 step_res = requests.post(f"{ENV_URL}/step", json={"command": "RUN_TESTS"}).json()
                 step_reward = step_res.get("reward", 0.15)
                 done = step_res.get("done", False)
-            except Exception:
+            except Exception as e:
+                print(f"Env Step Error: {e}")
                 step_reward = 0.15
                 done = True
 
