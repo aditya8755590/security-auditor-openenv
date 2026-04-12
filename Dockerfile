@@ -12,7 +12,8 @@ WORKDIR $HOME/app
 
 # Copy requirements and install them
 COPY --chown=user requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir --default-timeout=1000 -r requirements.txt
 
 # Copy all your project files
 COPY --chown=user . .
