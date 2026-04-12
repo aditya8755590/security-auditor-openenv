@@ -1,15 +1,12 @@
-spec_version: "1.0"
-environment:
-  name: "SecurityAuditor-MultiStep-v1"
-  description: "An advanced multi-step RL environment simulating a GitHub Pull Request. The AI agent acts as a Security Engineer and must navigate the file system, read code, flag specific vulnerabilities, and submit a final review."
-  tags: ["security", "code-audit", "multi-step", "llm-agent"]
-api:
-  base_url: "http://localhost:7860"
-  endpoints:
-    step: "/step"
-    reset: "/reset"
-    state: "/state"
-evaluation:
-  metrics:
-    - name: "reward"
-      description: "Cumulative reward based on accurate bug detection, codebase exploration, and penalties for false positives."
+spec_version: 1
+app: server.app:app
+tasks:
+  - id: easy_task
+    difficulty: easy
+    grader: server.graders:EasyGrader
+  - id: medium_task
+    difficulty: medium  
+    grader: server.graders:MediumGrader
+  - id: hard_task
+    difficulty: hard
+    grader: server.graders:HardGrader
